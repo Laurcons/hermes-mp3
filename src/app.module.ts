@@ -5,9 +5,11 @@ import { SessionService } from './service/session.service';
 import ChatService from './service/chat.service';
 import LocationService from './service/location.service';
 import AdminGateway from './ws/admin.gateway';
+import { MongooseModule } from '@nestjs/mongoose';
+import { config } from './lib/config';
 
 @Module({
-  imports: [],
+  imports: [MongooseModule.forRoot(config.mongoUrl)],
   controllers: [SessionsController],
   providers: [
     UserGateway,
