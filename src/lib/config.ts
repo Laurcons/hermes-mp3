@@ -12,5 +12,5 @@ const tryGet = <T = string>(key: string, transform?: (val: string) => T): T => {
 };
 
 export const config = {
-  mongoUrl: tryGet(process.env.MONGO_URL),
+  mongoUrl: tryGet('MONGO_URL'),
 };
