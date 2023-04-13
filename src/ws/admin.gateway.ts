@@ -1,20 +1,22 @@
-import { Logger } from '@nestjs/common';
 import {
-  MessageBody,
   OnGatewayConnection,
+  OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
-  WebSocketServer,
-  WsException,
 } from '@nestjs/websockets';
-import { Observable, bufferCount, bufferTime, filter, from, tap } from 'rxjs';
-import { Server, Socket } from 'socket.io';
-import { DefaultEventsMap } from 'socket.io/dist/typed-events';
+import {
+  Observable,
+  Subscription,
+  bufferCount,
+  bufferTime,
+  filter,
+  from,
+  tap,
+} from 'rxjs';
 import ChatService from 'src/service/chat.service';
 import LocationService from 'src/service/location.service';
 import { SessionService } from 'src/service/session.service';
-import { Session } from 'src/types/session';
 import { CustomServer, CustomSocket } from 'src/types/ws';
 
 @WebSocketGateway({
@@ -23,7 +25,7 @@ import { CustomServer, CustomSocket } from 'src/types/ws';
   transports: ['websocket', 'polling'],
 })
 export default class AdminGateway
-  implements OnGatewayConnection, OnGatewayInit
+  implements OnGatewayConnection, OnGatewayInit, OnGatewayDisconnect
 {
   constructor(
     private sessionService: SessionService,
@@ -32,55 +34,48 @@ export default class AdminGateway
   ) {}
 
   afterInit(server: CustomServer) {
-    server.use((client, next) => {
+    server.use(async (client, next) => {
       // verify session token
       const { token } = client.handshake.auth;
       const wsId = client.id;
-      const sess = this.sessionService.authSession(token, wsId);
+      const sess = await this.sessionService.authSession(token, wsId);
       if (!sess) {
         return next({
           name: 'invalid-session',
           message: 'Your session credentials are invalid',
         });
       }
-      client.data = { session: sess };
+      const subscriptions: Subscription[] = [
+        this.chatService.onMessage$.subscribe((msg) => {
+          client.emit('chat-message', msg);
+        }),
+        this.locationService.locationFeed$
+          .pipe(
+            bufferTime(2000),
+            filter((batch) => batch.length !== 0),
+          )
+          .subscribe((locBatch) => {
+            client.emit('locations-update', locBatch);
+            client.emit(
+              'global-location-tracking-percent',
+              this.sessionService.getGlobalLocationTrackingPercent(),
+            );
+          }),
+      ];
+      client.data = { sessionId: sess._id, subscriptions };
       next();
     });
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
-    // add listeners
-    this.chatService.onMessage$.subscribe((msg) => {
-      client.emit('chat-message', msg);
-    });
-    this.locationService.locationFeed$
-      .pipe(
-        bufferTime(2000),
-        filter((batch) => batch.length !== 0),
-      )
-      .subscribe((locBatch) => {
-        client.emit('locations-update', locBatch);
-        client.emit(
-          'global-location-tracking-percent',
-          this.sessionService.getGlobalLocationTrackingPercent(),
-        );
-      });
-    from(this.locationService.allLocations())
-      .pipe(bufferCount(10))
-      .forEach((loc) => client.emit('locations-update', loc));
-    from(this.chatService.messages).forEach((msg) => {
-      client.emit('chat-message', {
-        ...msg,
-        session: this.sessionService.sessions.find(
-          (s) => s._id === msg.sessionId,
-        ),
-      });
-    });
+  handleConnection(client: CustomSocket, ...args: any[]) {}
+
+  handleDisconnect(client: any) {
+    client.data.subscriptions.forEach((s) => s.unsubscribe());
   }
 
   @SubscribeMessage('send-chat-message')
-  sendMessage(socket: CustomSocket, text: string) {
-    const { session } = socket.data;
+  async sendMessage(socket: CustomSocket, text: string) {
+    const session = await this.sessionService.findById(socket.data.sessionId);
     this.chatService.sendMessage(session, text);
     return 'ok';
   }

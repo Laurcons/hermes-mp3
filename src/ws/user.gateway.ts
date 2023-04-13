@@ -1,21 +1,15 @@
-import { Logger } from '@nestjs/common';
 import {
-  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  WsException,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import ChatService from 'src/service/chat.service';
 import LocationService from 'src/service/location.service';
 import { SessionService } from 'src/service/session.service';
 import { Location } from 'src/types/location';
-import { Session } from 'src/types/session';
 import { CustomServer, CustomSocket } from 'src/types/ws';
 
 @WebSocketGateway({
@@ -36,70 +30,65 @@ export default class UserGateway
   ) {}
 
   afterInit() {
-    this.server.use((client, next) => {
+    this.server.use(async (client, next) => {
       // verify session token
       const { token } = client.handshake.auth;
       const wsId = client.id;
-      const sess = this.sessionService.authSession(token, wsId);
+      const sess = await this.sessionService.authSession(token, wsId);
       if (!sess) {
         return next({
           name: 'invalid-session',
           message: 'Your session credentials are invalid',
         });
       }
-      client.data = { session: sess };
+      const subscriptions = [
+        this.sessionService.locationTrackingChange$.subscribe((change) => {
+          if (client.data.sessionId === change._id) {
+            client.emit('location-tracking', change.isTrackingLocation);
+          }
+        }),
+        this.chatService.onMessage$.subscribe((msg) => {
+          client.emit('chat-message', msg);
+        }),
+      ];
+      client.data = { sessionId: sess._id, subscriptions };
       next();
     });
   }
 
-  handleConnection(client: CustomSocket, ...args: any[]) {
-    // add listeners
-    this.chatService.onMessage$.subscribe((msg) => {
-      client.emit('chat-message', msg);
-    });
-    this.sessionService.locationTrackingChange$.subscribe((change) => {
-      if (client.data.session!._id === change._id) {
-        client.emit('location-tracking', change.isTrackingLocation);
-      }
-    });
-    client.emit('location-tracking', client.data.session!.isTrackingLocation);
+  async handleConnection(client: CustomSocket) {
+    const sess = await this.sessionService.findById(client.data.sessionId);
+    client.emit('location-tracking', sess.isTrackingLocation);
   }
 
   handleDisconnect(client: CustomSocket) {
+    client.data.subscriptions.forEach((s) => s.unsubscribe());
     // this.sessionService.removeSession(client.data.session?._id);
   }
 
   @SubscribeMessage('update-nickname')
-  updateNickname(socket: CustomSocket, nickname: string) {
-    const sess = this.sessionService.updateNickname(
-      socket.data.session._id,
-      nickname,
-    );
-    socket.data.session = sess;
+  async updateNickname(socket: CustomSocket, nickname: string) {
+    await this.sessionService.updateNickname(socket.data.sessionId, nickname);
     return 'ok';
   }
 
   @SubscribeMessage('send-chat-message')
-  sendMessage(socket: CustomSocket, text: string) {
-    const { session } = socket.data;
+  async sendMessage(socket: CustomSocket, text: string) {
+    const session = await this.sessionService.findById(socket.data.sessionId);
     this.chatService.sendMessage(session, text);
     return 'ok';
   }
 
   @SubscribeMessage('location')
-  trackLocation(socket: CustomSocket, pos: Location) {
-    const { session } = socket.data;
+  async trackLocation(socket: CustomSocket, pos: Location) {
+    const session = await this.sessionService.findById(socket.data.sessionId);
     this.locationService.trackLocation(session, pos);
     return 'ok';
   }
 
   @SubscribeMessage('set-location-tracking')
-  setLocationTracking(socket: CustomSocket, isTracking: boolean) {
-    const { session } = socket.data;
-    socket.data.session = this.sessionService.setIsTracking(
-      session,
-      isTracking,
-    );
+  async setLocationTracking(socket: CustomSocket, isTracking: boolean) {
+    await this.sessionService.setIsTracking(socket.data.sessionId, isTracking);
     return 'ok';
   }
 }

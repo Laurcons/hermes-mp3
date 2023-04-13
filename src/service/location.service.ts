@@ -1,40 +1,41 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { WsException } from '@nestjs/websockets';
 import { randomUUID } from 'crypto';
+import { Model } from 'mongoose';
 import { Subject } from 'rxjs';
+import { LocationEvent } from 'src/models/locationEvent';
+import { Session } from 'src/models/session';
 import { Location } from 'src/types/location';
-import { LocationEvent } from 'src/types/locationEvent';
-import { Session } from 'src/types/session';
+import { LocationEventEvent } from './location.events';
 
 @Injectable()
 export default class LocationService {
-  private locationEvents: LocationEvent[] = [];
-
-  private locationFeedSub = new Subject<LocationEvent>();
+  private locationFeedSub = new Subject<LocationEventEvent>();
   locationFeed$ = this.locationFeedSub.asObservable();
 
-  constructor() {}
+  constructor(
+    @InjectModel(LocationEvent.name)
+    private locationEventModel: Model<LocationEvent>,
+  ) {}
 
-  trackLocation(session: Session, { lat, lon, acc }: Location) {
+  async trackLocation(session: Session, { lat, lon, acc }: Location) {
     if (!session.isTrackingLocation) {
       throw new WsException(
         'Refusing to track location if tracking is not activated for the session',
       );
     }
-    const loc: LocationEvent = {
-      _id: randomUUID(),
+    const loc = await this.locationEventModel.create({
       lat,
       lon,
       acc,
-      sessionId: session._id,
+      session: session._id,
       timestamp: new Date(),
-    };
-    this.locationEvents.push(loc);
-    this.locationFeedSub.next(loc);
+    });
+    this.locationFeedSub.next({
+      ...loc.toJSON(),
+      sessionId: session._id.toString(),
+    });
     return loc;
-  }
-
-  allLocations() {
-    return this.locationEvents;
   }
 }

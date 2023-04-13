@@ -1,31 +1,38 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import { WsException } from '@nestjs/websockets';
 import { randomUUID } from 'crypto';
+import { Model } from 'mongoose';
 import { Subject } from 'rxjs';
-import { ChatMessage } from 'src/types/chatMessage';
-import { Session } from 'src/types/session';
+import { ChatMessage } from 'src/models/chatMessage';
+import { ChatMessageEvent } from './chat.events';
+import { Session } from 'src/models/session';
 
 @Injectable()
 export default class ChatService {
-  messages: ChatMessage[] = [];
-
-  private onMessageSub = new Subject<ChatMessage>();
+  private onMessageSub = new Subject<ChatMessageEvent>();
   onMessage$ = this.onMessageSub.asObservable();
 
-  constructor() {}
+  constructor(
+    @InjectModel(ChatMessage.name) private chatMessageModel: Model<ChatMessage>,
+  ) {}
 
-  sendMessage(session: Session, text: string) {
+  async sendMessage(session: Session, text: string) {
     if (!session.nickname && !session.isAdmin)
       throw new WsException('Nickname not set');
-    const msg: ChatMessage = {
-      _id: randomUUID(),
-      sessionId: session._id,
+    const msg = await this.chatMessageModel.create({
+      session: session._id,
       text,
-    };
-    this.messages.push(msg);
+    });
     this.onMessageSub.next({
-      ...msg,
-      session,
+      _id: msg._id.toString(),
+      text: msg.text,
+      sessionId: msg.session.toString(),
+      session: {
+        _id: session._id.toString(),
+        nickname: session.nickname,
+        isAdmin: !!session.isAdmin,
+      },
     });
   }
 }
