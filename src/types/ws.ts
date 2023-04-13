@@ -1,17 +1,23 @@
 import { Server, Socket } from 'socket.io';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
-import { Session } from './session';
+import { Types } from 'mongoose';
+import { Subscription } from 'rxjs';
+
+export type SocketData = {
+  sessionId: Types.ObjectId;
+  subscriptions: Subscription[];
+};
 
 export type CustomServer = Server<
   DefaultEventsMap,
   DefaultEventsMap,
   DefaultEventsMap,
-  { session: Session }
+  SocketData
 >;
 
 export type CustomSocket = Socket<
   DefaultEventsMap,
   DefaultEventsMap,
   DefaultEventsMap,
-  { session: Session }
+  SocketData
 >;
