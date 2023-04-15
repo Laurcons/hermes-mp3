@@ -12,5 +12,7 @@ const tryGet = <T = string>(key: string, transform?: (val: string) => T): T => {
 };
 
 export const config = {
+  env: tryGet('NODE_ENV'),
   mongoUrl: tryGet('MONGO_URL'),
+  recaptchaSecret: tryGet('RECAPTCHA_SECRET'),
 };

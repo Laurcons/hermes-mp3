@@ -5,6 +5,7 @@ import { randomBytes, randomUUID } from 'crypto';
 import { Model, Types } from 'mongoose';
 import { Subject } from 'rxjs';
 import { Session } from 'src/models/session';
+import RecaptchaService from './recaptcha.service';
 
 @Injectable()
 export class SessionService {
@@ -15,9 +16,11 @@ export class SessionService {
 
   constructor(
     @InjectModel(Session.name) private sessionModel: Model<Session>,
+    private recaptchaService: RecaptchaService,
   ) {}
 
-  async createUserSession() {
+  async createUserSession(recaptchaToken: string) {
+    await this.recaptchaService.verifyToken(recaptchaToken);
     const token = randomBytes(256).toString('hex');
     const sess = await this.sessionModel.create({
       isAdmin: false,

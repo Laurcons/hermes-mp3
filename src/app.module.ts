@@ -10,6 +10,8 @@ import { config } from './lib/config';
 import { Session, SessionSchema } from './models/session';
 import { ChatMessage, ChatMessageSchema } from './models/chatMessage';
 import { LocationEvent, LocationEventSchema } from './models/locationEvent';
+import { HttpModule } from '@nestjs/axios';
+import RecaptchaService from './service/recaptcha.service';
 
 const models: ModelDefinition[] = [
   { name: Session.name, schema: SessionSchema, collection: 'session' },
@@ -23,6 +25,7 @@ const models: ModelDefinition[] = [
   imports: [
     MongooseModule.forRoot(config.mongoUrl),
     MongooseModule.forFeature(models),
+    HttpModule.register({}),
   ],
   controllers: [SessionsController],
   providers: [
@@ -31,6 +34,7 @@ const models: ModelDefinition[] = [
     SessionService,
     ChatService,
     LocationService,
+    RecaptchaService,
   ],
 })
 export class AppModule {}

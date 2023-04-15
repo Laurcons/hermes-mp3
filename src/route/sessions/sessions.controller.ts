@@ -13,7 +13,7 @@ export default class SessionsController {
         body.password,
       );
     } else {
-      return this.sessionService.createUserSession();
+      return this.sessionService.createUserSession(body.recaptchaToken);
     }
   }
 }
