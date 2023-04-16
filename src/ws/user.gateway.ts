@@ -1,69 +1,50 @@
-import {
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnGatewayInit,
-  SubscribeMessage,
-  WebSocketGateway,
-  WebSocketServer,
-} from '@nestjs/websockets';
+import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import ChatService from 'src/service/chat.service';
 import LocationService from 'src/service/location.service';
 import { SessionService } from 'src/service/session.service';
 import { Location } from 'src/types/location';
-import { CustomServer, CustomSocket } from 'src/types/ws';
+import { CustomSocket } from 'src/types/ws';
+import AbstractGateway from './abstract-gateway';
+import { Session } from 'src/models/session';
+import { Subscription } from 'rxjs';
 
 @WebSocketGateway({
   path: '/user',
   cors: { origin: '*' },
   transports: ['websocket', 'polling'],
 })
-export default class UserGateway
-  implements OnGatewayConnection, OnGatewayInit, OnGatewayDisconnect
-{
-  @WebSocketServer()
-  server: CustomServer;
-
+export default class UserGateway extends AbstractGateway {
   constructor(
     private sessionService: SessionService,
     private chatService: ChatService,
     private locationService: LocationService,
-  ) {}
+  ) {
+    super();
+  }
 
-  afterInit() {
-    this.server.use(async (client, next) => {
-      // verify session token
-      const { token } = client.handshake.auth;
-      const wsId = client.id;
-      const sess = await this.sessionService.authSession(token, wsId);
-      if (!sess) {
-        return next({
-          name: 'invalid-session',
-          message: 'Your session credentials are invalid',
-        });
-      }
-      const subscriptions = [
-        this.sessionService.locationTrackingChange$.subscribe((change) => {
-          if (client.data.sessionId === change._id) {
-            client.emit('location-tracking', change.isTrackingLocation);
-          }
-        }),
-        this.chatService.onMessage$.subscribe((msg) => {
-          client.emit('chat-message', msg);
-        }),
-      ];
-      client.data = { sessionId: sess._id, subscriptions };
-      next();
-    });
+  async attachSessionToSocket(client: CustomSocket): Promise<Session> {
+    const { token } = client.handshake.auth;
+    const wsId = client.id;
+    return await this.sessionService.authSession(token, wsId);
+  }
+
+  configureSubscriptions(client: CustomSocket): Subscription[] {
+    return [
+      this.sessionService.locationTrackingChange$.subscribe((change) => {
+        if (client.data.sessionId === change._id) {
+          client.emit('location-tracking', change.isTrackingLocation);
+        }
+      }),
+      this.chatService.onMessage$.subscribe((msg) => {
+        client.emit('chat-message', msg);
+      }),
+    ];
   }
 
   async handleConnection(client: CustomSocket) {
+    super.handleConnection(client);
     const sess = await this.sessionService.findById(client.data.sessionId);
     client.emit('location-tracking', sess.isTrackingLocation);
-  }
-
-  handleDisconnect(client: CustomSocket) {
-    client.data.subscriptions.forEach((s) => s.unsubscribe());
-    // this.sessionService.removeSession(client.data.session?._id);
   }
 
   @SubscribeMessage('update-nickname')
