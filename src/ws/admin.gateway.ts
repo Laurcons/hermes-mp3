@@ -5,7 +5,7 @@ import LocationService from 'src/service/location.service';
 import { SessionService } from 'src/service/session.service';
 import { AdminSocket } from 'src/types/socket-io';
 import AbstractGateway from './abstract-gateway';
-import { Session } from 'src/models/session';
+import { Session } from '@prisma/client';
 
 @WebSocketGateway({
   path: '/admin',

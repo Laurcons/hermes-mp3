@@ -1,5 +1,5 @@
 export interface ChatMessageEvent {
-  _id: string;
+  id: string;
   sessionId: string;
   session: {
     _id: string;

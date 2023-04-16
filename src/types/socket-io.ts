@@ -1,13 +1,11 @@
 import { Server, Socket } from 'socket.io';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
-import { Types } from 'mongoose';
 import { Subscription } from 'rxjs';
-import { ChatMessage } from 'src/models/chatMessage';
 import { ChatMessageEvent } from 'src/service/chat.events';
 import { LocationEventEvent } from 'src/service/location.events';
 
 export type SocketData = {
-  sessionId: Types.ObjectId;
+  sessionId: string;
   subscriptions: Subscription[];
 };
 

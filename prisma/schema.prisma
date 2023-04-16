@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("MONGO_URL")
+}
+
+enum ParticipantRole {
+  admin
+  volunteer
+}
+
+enum SessionRole {
+  admin
+  volunteer
+  participant
+}
+
+enum ChatRoom {
+  participants
+  volunteers
+}
+
+model User {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  username String
+  password String
+  role     ParticipantRole
+  assignedTeamId   String?
+
+  sessions Session[]
+  locationEvents LocationEvent[]
+}
+
+model Session {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  wsId String?
+  userId String? @db.ObjectId
+  token String
+  isTrackingLocation Boolean @default(false)
+  nickname String?
+  role SessionRole
+  teamId String?
+
+  user User? @relation(fields: [userId], references: [id])
+  chatMessages ChatMessage[]
+}
+
+model ChatMessage {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  isParticipant Boolean
+  sessionId String @db.ObjectId
+  room ChatRoom
+  text String
+
+  session Session? @relation(fields: [sessionId], references: [id])
+}
+
+model LocationEvent {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  timestamp DateTime
+  lat Float
+  lon Float
+  acc Float
+
+  user User @relation(fields: [userId], references: [id])
+}

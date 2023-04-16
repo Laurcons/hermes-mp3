@@ -4,9 +4,9 @@ import {
   OnGatewayDisconnect,
   OnGatewayInit,
 } from '@nestjs/websockets';
+import { Session } from '@prisma/client';
 import { Subscription } from 'rxjs';
 import { Socket } from 'socket.io';
-import { Session } from 'src/models/session';
 import { CustomServer } from 'src/types/socket-io';
 
 export default abstract class AbstractGateway
@@ -28,7 +28,7 @@ export default abstract class AbstractGateway
       const session = await this.attachSessionToSocket(client);
       const subscriptions = this.configureSubscriptions(client);
       client.data = {
-        sessionId: session._id,
+        sessionId: session.id,
         subscriptions,
       };
       next();

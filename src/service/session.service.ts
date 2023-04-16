@@ -1,30 +1,31 @@
 import { HttpException, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import { WsException } from '@nestjs/websockets';
-import { randomBytes, randomUUID } from 'crypto';
-import { Model, Types } from 'mongoose';
+import { randomBytes } from 'crypto';
 import { Subject } from 'rxjs';
-import { Session } from 'src/models/session';
 import RecaptchaService from './recaptcha.service';
+import PrismaService from './prisma.service';
+import { Session } from '@prisma/client';
 
 @Injectable()
 export class SessionService {
   private locationTrackingChangeSub = new Subject<
-    Pick<Session, '_id' | 'isTrackingLocation'>
+    Pick<Session, 'id' | 'isTrackingLocation'>
   >();
   locationTrackingChange$ = this.locationTrackingChangeSub.asObservable();
 
   constructor(
-    @InjectModel(Session.name) private sessionModel: Model<Session>,
+    private prisma: PrismaService,
     private recaptchaService: RecaptchaService,
   ) {}
 
   async createUserSession(recaptchaToken: string) {
     await this.recaptchaService.verifyToken(recaptchaToken);
     const token = randomBytes(256).toString('hex');
-    const sess = await this.sessionModel.create({
-      isAdmin: false,
-      token,
+    const sess = await this.prisma.session.create({
+      data: {
+        token,
+        role: 'participant',
+      },
     });
     return sess;
   }
@@ -33,20 +34,27 @@ export class SessionService {
     if (!(username === 'laur' && password === 'laur'))
       throw new HttpException('Invalid credentials', 401);
     const token = randomBytes(256).toString('hex');
-    const sess = await this.sessionModel.create({
-      isAdmin: true,
-      token,
+    const sess = await this.prisma.session.create({
+      data: {
+        token,
+        role: 'admin',
+      },
     });
     return sess;
   }
 
-  async findById(id: Types.ObjectId | string) {
-    id = new Types.ObjectId(id);
-    return await this.sessionModel.findById(id);
+  async createVolunteerSession(username: string, password: string) {
+    if (!(username === 'volunt' && password === 'volunt'))
+      throw new HttpException('Invalid credentials', 401);
+    const token = randomBytes(256).toString('hex');
   }
 
-  async removeSession(id: Types.ObjectId) {
-    await this.sessionModel.deleteOne({ _id: id });
+  async findById(id: string) {
+    return await this.prisma.session.findUnique({ where: { id } });
+  }
+
+  async removeSession(id: string) {
+    return await this.prisma.session.delete({ where: { id } });
   }
 
   /**
@@ -57,22 +65,23 @@ export class SessionService {
     wsId: string,
     platform: 'admin' | 'user' = 'user',
   ): Promise<Session> {
-    const sess = await this.sessionModel.findOne({
-      token,
-    });
+    const sess = await this.prisma.session.findFirst({ where: { token } });
     if (!sess) throw new WsException('Invalid credentials');
-    if (!sess.isAdmin && platform === 'admin')
+    if (sess.role !== 'admin' && platform === 'admin')
       throw new WsException('Invalid credentials');
     sess.wsId = wsId;
     return sess;
   }
 
-  async updateNickname(id: Types.ObjectId, nickname: string): Promise<Session> {
-    const sess = await this.sessionModel.findOneAndUpdate(
-      { _id: id },
-      { $set: { nickname } },
-      { new: true },
-    );
+  async updateNickname(id: string, nickname: string): Promise<Session> {
+    const sess = await this.prisma.session.update({
+      where: {
+        id,
+      },
+      data: {
+        nickname,
+      },
+    });
     if (!sess) throw new WsException('Invalid session id');
     return sess;
   }
@@ -82,13 +91,16 @@ export class SessionService {
     return 0.69;
   }
 
-  async setIsTracking(id: Types.ObjectId, isTrackingLocation: boolean) {
-    const sess = await this.sessionModel.findOneAndUpdate(
-      { _id: id },
-      { $set: { isTrackingLocation } },
-      { new: true },
-    );
-    this.locationTrackingChangeSub.next({ _id: id, isTrackingLocation });
+  async setIsTracking(id: string, isTrackingLocation: boolean) {
+    const sess = await this.prisma.session.update({
+      where: {
+        id,
+      },
+      data: {
+        isTrackingLocation,
+      },
+    });
+    this.locationTrackingChangeSub.next({ id, isTrackingLocation });
     return sess;
   }
 }
