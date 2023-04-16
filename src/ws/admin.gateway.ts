@@ -3,7 +3,7 @@ import { Subscription, bufferTime, filter } from 'rxjs';
 import ChatService from 'src/service/chat.service';
 import LocationService from 'src/service/location.service';
 import { SessionService } from 'src/service/session.service';
-import { CustomSocket } from 'src/types/ws';
+import { AdminSocket } from 'src/types/socket-io';
 import AbstractGateway from './abstract-gateway';
 import { Session } from 'src/models/session';
 
@@ -21,13 +21,13 @@ export default class AdminGateway extends AbstractGateway {
     super();
   }
 
-  async attachSessionToSocket(client: CustomSocket): Promise<Session> {
+  async attachSessionToSocket(client: AdminSocket): Promise<Session> {
     const { token } = client.handshake.auth;
     const wsId = client.id;
     return await this.sessionService.authSession(token, wsId);
   }
 
-  configureSubscriptions(client: CustomSocket): Subscription[] {
+  configureSubscriptions(client: AdminSocket): Subscription[] {
     return [
       this.chatService.onMessage$.subscribe((msg) => {
         client.emit('chat-message', msg);
@@ -39,16 +39,12 @@ export default class AdminGateway extends AbstractGateway {
         )
         .subscribe((locBatch) => {
           client.emit('locations-update', locBatch);
-          client.emit(
-            'global-location-tracking-percent',
-            this.sessionService.getGlobalLocationTrackingPercent(),
-          );
         }),
     ];
   }
 
   @SubscribeMessage('send-chat-message')
-  async sendMessage(socket: CustomSocket, text: string) {
+  async sendMessage(socket: AdminSocket, text: string) {
     const session = await this.sessionService.findById(socket.data.sessionId);
     this.chatService.sendMessage(session, text);
     return 'ok';

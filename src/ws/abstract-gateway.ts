@@ -5,22 +5,21 @@ import {
   OnGatewayInit,
 } from '@nestjs/websockets';
 import { Subscription } from 'rxjs';
+import { Socket } from 'socket.io';
 import { Session } from 'src/models/session';
-import { CustomServer, CustomSocket } from 'src/types/ws';
+import { CustomServer } from 'src/types/socket-io';
 
 export default abstract class AbstractGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
-  abstract attachSessionToSocket(
-    client: CustomSocket,
-  ): Session | Promise<Session>;
-  abstract configureSubscriptions(client: CustomSocket): Subscription[];
+  abstract attachSessionToSocket(client: Socket): Session | Promise<Session>;
+  abstract configureSubscriptions(client: Socket): Subscription[];
 
-  handleConnection(client: CustomSocket) {
+  handleConnection(client: Socket) {
     Logger.log(`Socket from ${client.client.conn.remoteAddress}`);
   }
 
-  handleDisconnect(client: CustomSocket) {
+  handleDisconnect(client: Socket) {
     client.data.subscriptions.forEach((sub) => sub.unsubscribe());
   }
 
