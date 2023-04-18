@@ -11,6 +11,7 @@ import { Response } from 'express';
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
     const res = host.switchToHttp().getResponse<Response>();
+    console.log({ exception });
     if (exception instanceof AppException) {
       res.status(exception.getStatus()).json({
         status: exception.getStatus(),
