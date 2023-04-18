@@ -34,6 +34,11 @@ export const errors = {
       'InvalidCredentials',
       'Datele de autentificare sunt incorecte',
     ),
+    invalidTeamCode: new AppException(
+      HttpStatus.UNAUTHORIZED,
+      'InvalidTeamCode',
+      'Codul echipei este invalid!',
+    ),
   },
   invalidCaptcha: new AppException(
     HttpStatus.UNAUTHORIZED,

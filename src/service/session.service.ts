@@ -19,13 +19,20 @@ export class SessionService {
     private recaptchaService: RecaptchaService,
   ) {}
 
-  async createUserSession(recaptchaToken: string) {
-    await this.recaptchaService.verifyToken(recaptchaToken);
+  async createUserSession(data: { recaptchaToken: string; teamCode: string }) {
+    await this.recaptchaService.verifyToken(data.recaptchaToken);
+    const team = await this.prisma.team.findFirst({
+      where: { code: data.teamCode ?? '' },
+    });
+    if (!team) {
+      throw errors.auth.invalidTeamCode;
+    }
     const token = randomBytes(256).toString('hex');
     const sess = await this.prisma.session.create({
       data: {
         token,
         role: 'participant',
+        teamId: team.code,
       },
     });
     return sess;
