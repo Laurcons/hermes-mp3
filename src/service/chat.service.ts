@@ -4,6 +4,7 @@ import { Subject } from 'rxjs';
 import { ChatMessageEvent } from './chat.events';
 import PrismaService from './prisma.service';
 import { Session } from '@prisma/client';
+import { errors } from 'src/lib/errors';
 
 @Injectable()
 export default class ChatService {
@@ -14,7 +15,7 @@ export default class ChatService {
 
   async sendMessage(session: Session, text: string) {
     if (!session.nickname && session.role === 'participant')
-      throw new WsException('Nickname not set');
+      throw errors.ws.nicknameNotSet;
     const msg = await this.prisma.chatMessage.create({
       data: {
         sessionId: session.id,

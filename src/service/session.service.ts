@@ -83,7 +83,7 @@ export class SessionService {
         nickname,
       },
     });
-    if (!sess) throw new WsException('Invalid session id');
+    if (!sess) throw errors.ws.invalidToken;
     return sess;
   }
 

@@ -19,6 +19,14 @@ export const errors = {
       'InvalidToken',
       'Tokenul de autentificare este invalid',
     ),
+    nicknameNotSet: new WsAppException(
+      'NicknameNotSet',
+      'Nu ai setat un pseudonim!',
+    ),
+    refusingLocationTrack: new WsAppException(
+      'RefusingLocationTrack',
+      'Se refuza receptionarea locatiei deoarece locatia live este oprita',
+    ),
   },
   auth: {
     invalidCredentials: new AppException(

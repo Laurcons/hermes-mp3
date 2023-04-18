@@ -11,7 +11,6 @@ import { UserSocket } from 'src/types/socket-io';
 import AbstractGateway from './abstract-gateway';
 import { Subscription } from 'rxjs';
 import { Session } from '@prisma/client';
-import { UseFilters } from '@nestjs/common';
 
 @WebSocketGateway({
   path: '/user',
@@ -56,7 +55,7 @@ export default class UserGateway extends AbstractGateway {
   @SubscribeMessage('send-chat-message')
   async sendMessage(socket: UserSocket, text: string) {
     const session = await this.sessionService.findById(socket.data.sessionId);
-    this.chatService.sendMessage(session, text);
+    await this.chatService.sendMessage(session, text);
     return 'ok';
   }
 

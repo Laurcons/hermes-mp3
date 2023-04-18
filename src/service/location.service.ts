@@ -5,6 +5,7 @@ import { Location } from 'src/types/location';
 import { LocationEventEvent } from './location.events';
 import PrismaService from './prisma.service';
 import { Session } from '@prisma/client';
+import { errors } from 'src/lib/errors';
 
 @Injectable()
 export default class LocationService {
@@ -15,9 +16,7 @@ export default class LocationService {
 
   async trackLocation(session: Session, { lat, lon, acc }: Location) {
     if (!session.isTrackingLocation) {
-      throw new WsException(
-        'Refusing to track location if tracking is not activated for the session',
-      );
+      throw errors.ws.refusingLocationTrack;
     }
     const loc = await this.prisma.locationEvent.create({
       data: {
