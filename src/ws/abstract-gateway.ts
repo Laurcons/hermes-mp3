@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Logger, UseFilters } from '@nestjs/common';
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -7,8 +7,10 @@ import {
 import { Session } from '@prisma/client';
 import { Subscription } from 'rxjs';
 import { Socket } from 'socket.io';
+import { WsExceptionsFilter } from 'src/lib/filters/ws-exception.filter';
 import { CustomServer } from 'src/types/socket-io';
 
+@UseFilters(WsExceptionsFilter)
 export default abstract class AbstractGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
