@@ -25,7 +25,7 @@ export const errors = {
     ),
     refusingLocationTrack: new WsAppException(
       'RefusingLocationTrack',
-      'Se refuza receptionarea locatiei deoarece locatia live este oprita',
+      'Se refuză recepționarea locației deoarece locația live este oprită',
     ),
   },
   auth: {
@@ -43,6 +43,6 @@ export const errors = {
   invalidCaptcha: new AppException(
     HttpStatus.UNAUTHORIZED,
     'InvalidCaptcha',
-    'Verificarea anti-roboti a esuat. Te rog incearca din nou.',
+    'Verificarea anti-roboți a eșuat. Te rog incearcă din nou.',
   ),
 };
