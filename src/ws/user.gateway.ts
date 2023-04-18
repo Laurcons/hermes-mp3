@@ -1,4 +1,8 @@
-import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
+import {
+  BaseWsExceptionFilter,
+  SubscribeMessage,
+  WebSocketGateway,
+} from '@nestjs/websockets';
 import ChatService from 'src/service/chat.service';
 import LocationService from 'src/service/location.service';
 import { SessionService } from 'src/service/session.service';
@@ -7,6 +11,7 @@ import { UserSocket } from 'src/types/socket-io';
 import AbstractGateway from './abstract-gateway';
 import { Subscription } from 'rxjs';
 import { Session } from '@prisma/client';
+import { UseFilters } from '@nestjs/common';
 
 @WebSocketGateway({
   path: '/user',

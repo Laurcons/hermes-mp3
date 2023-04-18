@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import RecaptchaService from './recaptcha.service';
 import PrismaService from './prisma.service';
 import { Session } from '@prisma/client';
+import { errors } from 'src/lib/errors';
 
 @Injectable()
 export class SessionService {
@@ -32,7 +33,7 @@ export class SessionService {
 
   async createAdminSession(username: string, password: string) {
     if (!(username === 'laur' && password === 'laur'))
-      throw new HttpException('Invalid credentials', 401);
+      throw errors.auth.invalidCredentials;
     const token = randomBytes(256).toString('hex');
     const sess = await this.prisma.session.create({
       data: {
@@ -45,7 +46,7 @@ export class SessionService {
 
   async createVolunteerSession(username: string, password: string) {
     if (!(username === 'volunt' && password === 'volunt'))
-      throw new HttpException('Invalid credentials', 401);
+      throw errors.auth.invalidCredentials;
     const token = randomBytes(256).toString('hex');
   }
 
@@ -66,9 +67,9 @@ export class SessionService {
     platform: 'admin' | 'user' = 'user',
   ): Promise<Session> {
     const sess = await this.prisma.session.findFirst({ where: { token } });
-    if (!sess) throw new WsException('Invalid credentials');
+    if (!sess) throw errors.ws.invalidToken;
     if (sess.role !== 'admin' && platform === 'admin')
-      throw new WsException('Invalid credentials');
+      throw errors.ws.invalidToken;
     sess.wsId = wsId;
     return sess;
   }

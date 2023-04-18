@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import { config } from 'src/lib/config';
+import { errors } from 'src/lib/errors';
 
 @Injectable()
 export default class RecaptchaService {
@@ -34,7 +35,7 @@ export default class RecaptchaService {
       return true;
     } catch (axiosErr: any) {
       console.log({ axiosErr });
-      throw new HttpException('ReCAPTCHA failed', HttpStatus.BAD_REQUEST);
+      throw errors.invalidCaptcha;
     }
   }
 }

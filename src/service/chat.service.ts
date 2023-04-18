@@ -13,7 +13,7 @@ export default class ChatService {
   constructor(private prisma: PrismaService) {}
 
   async sendMessage(session: Session, text: string) {
-    if (!session.nickname && session.role === 'volunteer')
+    if (!session.nickname && session.role === 'participant')
       throw new WsException('Nickname not set');
     const msg = await this.prisma.chatMessage.create({
       data: {
