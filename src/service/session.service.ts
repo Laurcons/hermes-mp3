@@ -73,7 +73,10 @@ export class SessionService {
     wsId: string,
     platform: 'admin' | 'user' = 'user',
   ): Promise<Session> {
-    const sess = await this.prisma.session.findFirst({ where: { token } });
+    console.log({ token });
+    const sess = await this.prisma.session.findUnique({
+      where: { token: token ?? '' },
+    });
     if (!sess) throw errors.ws.invalidToken;
     if (sess.role !== 'admin' && platform === 'admin')
       throw errors.ws.invalidToken;

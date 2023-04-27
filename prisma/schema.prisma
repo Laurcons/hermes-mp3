@@ -41,7 +41,7 @@ model Session {
   id String @id @default(auto()) @map("_id") @db.ObjectId
   wsId String?
   userId String? @db.ObjectId
-  token String
+  token String @unique
   isTrackingLocation Boolean @default(false)
   nickname String?
   role SessionRole

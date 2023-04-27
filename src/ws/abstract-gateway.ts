@@ -7,6 +7,7 @@ import {
 import { Session } from '@prisma/client';
 import { Subscription } from 'rxjs';
 import { Socket } from 'socket.io';
+import { ExtendedError } from 'socket.io/dist/namespace';
 import { WsExceptionsFilter } from 'src/lib/filters/ws-exception.filter';
 import { CustomServer } from 'src/types/socket-io';
 
@@ -27,12 +28,18 @@ export default abstract class AbstractGateway
 
   afterInit(server: CustomServer) {
     server.use(async (client, next) => {
-      const session = await this.attachSessionToSocket(client);
-      const subscriptions = this.configureSubscriptions(client);
-      client.data = {
-        sessionId: session.id,
-        subscriptions,
-      };
+      try {
+        const session = await this.attachSessionToSocket(client);
+        const subscriptions = this.configureSubscriptions(client);
+        client.data = {
+          sessionId: session.id,
+          subscriptions,
+        };
+      } catch (err: any) {
+        const error = new Error(err.message) as ExtendedError;
+        error.data = err;
+        return next(error);
+      }
       next();
     });
   }
