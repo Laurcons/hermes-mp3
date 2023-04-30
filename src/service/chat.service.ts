@@ -3,7 +3,7 @@ import { WsException } from '@nestjs/websockets';
 import { Subject } from 'rxjs';
 import { ChatMessageEvent } from './chat.events';
 import PrismaService from './prisma.service';
-import { Session } from '@prisma/client';
+import { ChatRoom, Session } from '@prisma/client';
 import { errors } from 'src/lib/errors';
 
 @Injectable()
@@ -21,6 +21,7 @@ export default class ChatService {
         sessionId: session.id,
         isParticipant: session.role === 'participant',
         room: 'participants',
+        timestamp: new Date(),
         text,
       },
     });
@@ -34,5 +35,30 @@ export default class ChatService {
         isAdmin: session.role === 'admin',
       },
     });
+  }
+
+  async getLast50ChatEvents(room: ChatRoom): Promise<ChatMessageEvent[]> {
+    const msgs = await this.prisma.chatMessage.findMany({
+      take: 50,
+      where: {
+        room,
+      },
+      orderBy: {
+        timestamp: 'desc',
+      },
+      include: {
+        session: true,
+      },
+    });
+    return msgs.reverse().map(({ session, ...msg }) => ({
+      id: msg.id,
+      text: msg.text,
+      sessionId: session.id,
+      session: {
+        _id: session.id,
+        nickname: session.nickname,
+        isAdmin: session.role === 'admin',
+      },
+    }));
   }
 }

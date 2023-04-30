@@ -6,7 +6,9 @@ import { Socket } from 'socket.io';
 @Catch()
 export class WsExceptionsFilter extends BaseWsExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
+    console.log('exception filter!');
     const ackCallback = host.getArgByIndex(2);
+    console.log(exception);
     const respond = (thing: any) => {
       if (typeof ackCallback === 'function') ackCallback(thing);
       else

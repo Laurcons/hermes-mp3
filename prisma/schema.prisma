@@ -31,10 +31,8 @@ model User {
   username String
   password String
   role     UserRole
-  assignedTeamId   String?
 
   sessions Session[]
-  locationEvents LocationEvent[]
 }
 
 model Session {
@@ -45,14 +43,15 @@ model Session {
   isTrackingLocation Boolean @default(false)
   nickname String?
   role SessionRole
-  teamId String?
 
   user User? @relation(fields: [userId], references: [id])
   chatMessages ChatMessage[]
+  locationEvents LocationEvent[]
 }
 
 model ChatMessage {
   id String @id @default(auto()) @map("_id") @db.ObjectId
+  timestamp DateTime @default(now())
   isParticipant Boolean
   sessionId String @db.ObjectId
   room ChatRoom
@@ -63,31 +62,11 @@ model ChatMessage {
 
 model LocationEvent {
   id String @id @default(auto()) @map("_id") @db.ObjectId
-  userId String @db.ObjectId
+  sessionId String @db.ObjectId
   timestamp DateTime
   lat Float
   lon Float
   acc Float
 
-  user User @relation(fields: [userId], references: [id])
-}
-
-model Challenges {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  title String
-  description String
-}
-
-model Team {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  name String
-  code String @unique
-}
-
-model TeamChallenges {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  teamId String @db.ObjectId
-  challengeId String @db.ObjectId
-  points Int
-  mentions String?
+  session Session @relation(fields: [sessionId], references: [id])
 }

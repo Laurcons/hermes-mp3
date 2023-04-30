@@ -9,9 +9,10 @@ import { Subscription } from 'rxjs';
 import { Socket } from 'socket.io';
 import { ExtendedError } from 'socket.io/dist/namespace';
 import { WsExceptionsFilter } from 'src/lib/filters/ws-exception.filter';
+import { SocketData } from 'src/types/socket-io';
 import { CustomServer } from 'src/types/socket-io';
 
-@UseFilters(WsExceptionsFilter)
+// @UseFilters(WsExceptionsFilter)
 export default abstract class AbstractGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {

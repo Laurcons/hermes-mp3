@@ -23,7 +23,7 @@ export default class LocationService {
         lat,
         lon,
         acc,
-        userId: session.userId,
+        sessionId: session.id,
         timestamp: new Date(),
       },
     });

@@ -6,6 +6,7 @@ import RecaptchaService from './recaptcha.service';
 import PrismaService from './prisma.service';
 import { Session } from '@prisma/client';
 import { errors } from 'src/lib/errors';
+import { NicknameChangedEvent } from './session.events';
 
 @Injectable()
 export class SessionService {
@@ -13,26 +14,21 @@ export class SessionService {
     Pick<Session, 'id' | 'isTrackingLocation'>
   >();
   locationTrackingChange$ = this.locationTrackingChangeSub.asObservable();
+  private nicknameChangedSub = new Subject<NicknameChangedEvent>();
+  nicknameChanged$ = this.nicknameChangedSub.asObservable();
 
   constructor(
     private prisma: PrismaService,
     private recaptchaService: RecaptchaService,
   ) {}
 
-  async createUserSession(data: { recaptchaToken: string; teamCode: string }) {
+  async createUserSession(data: { recaptchaToken: string }) {
     await this.recaptchaService.verifyToken(data.recaptchaToken);
-    const team = await this.prisma.team.findFirst({
-      where: { code: data.teamCode ?? '' },
-    });
-    if (!team) {
-      throw errors.auth.invalidTeamCode;
-    }
     const token = randomBytes(256).toString('hex');
     const sess = await this.prisma.session.create({
       data: {
         token,
         role: 'participant',
-        teamId: team.code,
       },
     });
     return sess;
@@ -66,6 +62,16 @@ export class SessionService {
   }
 
   /**
+   * Removes the wsId from a session, effectively saying that it is not active anymore (and probably never will be again).
+   */
+  async markAsInactive(id: string) {
+    return await this.prisma.session.update({
+      where: { id },
+      data: { wsId: null },
+    });
+  }
+
+  /**
    * Authenticates a session. If successfully authed, returns Session. Otherwise, throws.
    */
   async authSession(
@@ -73,7 +79,6 @@ export class SessionService {
     wsId: string,
     platform: 'admin' | 'user' = 'user',
   ): Promise<Session> {
-    console.log({ token });
     const sess = await this.prisma.session.findUnique({
       where: { token: token ?? '' },
     });
@@ -94,6 +99,7 @@ export class SessionService {
       },
     });
     if (!sess) throw errors.ws.invalidToken;
+    this.nicknameChangedSub.next({ sessionId: id, nickname });
     return sess;
   }
 
