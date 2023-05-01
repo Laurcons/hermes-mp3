@@ -57,9 +57,7 @@ export default class UserGateway extends AbstractGateway {
     super.handleConnection(client);
     const sess = await this.sessionService.findById(client.data.sessionId);
     client.emit('location-tracking', sess.isTrackingLocation);
-    const chats = await this.chatService.getLast50ChatEvents(
-      ChatRoom.participants,
-    );
+    const chats = await this.chatService.getLast50ChatEvents(['participants']);
     for (const chat of chats) {
       client.emit('chat-message', chat);
     }
@@ -83,7 +81,7 @@ export default class UserGateway extends AbstractGateway {
   @SubscribeMessage('send-chat-message')
   async sendMessage(socket: UserSocket, text: string) {
     const session = await this.sessionService.findById(socket.data.sessionId);
-    await this.chatService.sendMessage(session, text);
+    await this.chatService.sendMessage(session, 'participants', text);
     return 'ok';
   }
 

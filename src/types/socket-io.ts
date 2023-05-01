@@ -1,8 +1,9 @@
 import { Server, Socket } from 'socket.io';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { Subscription } from 'rxjs';
-import { ChatMessageEvent } from 'src/service/chat.events';
-import { LocationEventEvent } from 'src/service/location.events';
+import { ChatMessageEvent } from 'src/types/events/chat.events';
+import { LocationEventEvent } from 'src/types/events/location.events';
+import StatusEvent from './events/status.events';
 
 export type SocketData = {
   sessionId: string;
@@ -18,6 +19,7 @@ export interface ServerToUserEvents {
 export interface ServerToAdminEvents {
   'chat-message': (msg: ChatMessageEvent) => void;
   'locations-update': (batch: LocationEventEvent[]) => void;
+  status: (status: StatusEvent) => void;
 }
 
 export type UserSocket = Socket<

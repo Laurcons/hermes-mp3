@@ -1,3 +1,5 @@
+import { ChatRoom } from '@prisma/client';
+
 export interface ChatMessageEvent {
   id: string;
   sessionId: string;
@@ -6,5 +8,6 @@ export interface ChatMessageEvent {
     nickname: string;
     isAdmin: boolean;
   };
+  room: ChatRoom;
   text: string;
 }

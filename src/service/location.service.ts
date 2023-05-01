@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { Subject } from 'rxjs';
 import { Location } from 'src/types/location';
-import { LocationEventEvent } from './location.events';
+import { LocationEventEvent } from '../types/events/location.events';
 import PrismaService from './prisma.service';
 import { Session } from '@prisma/client';
 import { errors } from 'src/lib/errors';
@@ -32,5 +32,11 @@ export default class LocationService {
       sessionId: session.id.toString(),
     });
     return loc;
+  }
+
+  async getLast50LocationEvents() {
+    return await this.prisma.locationEvent.findMany({
+      take: 50,
+    });
   }
 }

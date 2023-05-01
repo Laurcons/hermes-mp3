@@ -1,12 +1,11 @@
-import { HttpException, Injectable } from '@nestjs/common';
-import { WsException } from '@nestjs/websockets';
+import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { Subject } from 'rxjs';
 import RecaptchaService from './recaptcha.service';
 import PrismaService from './prisma.service';
 import { Session } from '@prisma/client';
 import { errors } from 'src/lib/errors';
-import { NicknameChangedEvent } from './session.events';
+import { NicknameChangedEvent } from 'src/types/events/session.events';
 
 @Injectable()
 export class SessionService {
@@ -62,7 +61,7 @@ export class SessionService {
   }
 
   /**
-   * Removes the wsId from a session, effectively saying that it is not active anymore (and probably never will be again).
+   * Removes the wsId from a session, effectively saying that it is not active anymore.
    */
   async markAsInactive(id: string) {
     return await this.prisma.session.update({
@@ -79,13 +78,13 @@ export class SessionService {
     wsId: string,
     platform: 'admin' | 'user' = 'user',
   ): Promise<Session> {
-    const sess = await this.prisma.session.findUnique({
+    const sess = await this.prisma.session.update({
       where: { token: token ?? '' },
+      data: { wsId },
     });
     if (!sess) throw errors.ws.invalidToken;
     if (sess.role !== 'admin' && platform === 'admin')
       throw errors.ws.invalidToken;
-    sess.wsId = wsId;
     return sess;
   }
 
@@ -103,11 +102,6 @@ export class SessionService {
     return sess;
   }
 
-  async getGlobalLocationTrackingPercent() {
-    // TODO: calculate this percent
-    return 0.69;
-  }
-
   async setIsTracking(id: string, isTrackingLocation: boolean) {
     const sess = await this.prisma.session.update({
       where: {
@@ -119,5 +113,27 @@ export class SessionService {
     });
     this.locationTrackingChangeSub.next({ id, isTrackingLocation });
     return sess;
+  }
+
+  async getStatusReport() {
+    const [activeParticipants, activeTrackings] = await Promise.all([
+      this.prisma.session.count({
+        where: {
+          role: 'participant',
+          wsId: { not: null },
+        },
+      }),
+      this.prisma.session.count({
+        where: {
+          role: 'participant',
+          isTrackingLocation: true,
+          wsId: { not: null },
+        },
+      }),
+    ]);
+    return {
+      activeParticipants,
+      activeTrackings,
+    };
   }
 }

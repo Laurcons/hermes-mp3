@@ -52,7 +52,6 @@ model Session {
 model ChatMessage {
   id String @id @default(auto()) @map("_id") @db.ObjectId
   timestamp DateTime @default(now())
-  isParticipant Boolean
   sessionId String @db.ObjectId
   room ChatRoom
   text String

@@ -8,6 +8,7 @@ import AdminGateway from './ws/admin.gateway';
 import { HttpModule } from '@nestjs/axios';
 import RecaptchaService from './service/recaptcha.service';
 import PrismaService from './service/prisma.service';
+import StatusService from './service/status.service';
 
 @Module({
   imports: [HttpModule.register({})],
@@ -20,6 +21,7 @@ import PrismaService from './service/prisma.service';
     ChatService,
     LocationService,
     RecaptchaService,
+    StatusService,
   ],
 })
 export class AppModule {}

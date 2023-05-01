@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 import { Subject } from 'rxjs';
-import { ChatMessageEvent } from './chat.events';
+import { ChatMessageEvent } from '../types/events/chat.events';
 import PrismaService from './prisma.service';
 import { ChatRoom, Session } from '@prisma/client';
 import { errors } from 'src/lib/errors';
@@ -13,14 +13,13 @@ export default class ChatService {
 
   constructor(private prisma: PrismaService) {}
 
-  async sendMessage(session: Session, text: string) {
+  async sendMessage(session: Session, room: ChatRoom, text: string) {
     if (!session.nickname && session.role === 'participant')
       throw errors.ws.nicknameNotSet;
     const msg = await this.prisma.chatMessage.create({
       data: {
         sessionId: session.id,
-        isParticipant: session.role === 'participant',
-        room: 'participants',
+        room,
         timestamp: new Date(),
         text,
       },
@@ -29,6 +28,7 @@ export default class ChatService {
       id: msg.id,
       text: msg.text,
       sessionId: session.id,
+      room,
       session: {
         _id: session.id,
         nickname: session.nickname,
@@ -37,28 +37,37 @@ export default class ChatService {
     });
   }
 
-  async getLast50ChatEvents(room: ChatRoom): Promise<ChatMessageEvent[]> {
-    const msgs = await this.prisma.chatMessage.findMany({
-      take: 50,
-      where: {
-        room,
-      },
-      orderBy: {
-        timestamp: 'desc',
-      },
-      include: {
-        session: true,
-      },
-    });
-    return msgs.reverse().map(({ session, ...msg }) => ({
-      id: msg.id,
-      text: msg.text,
-      sessionId: session.id,
-      session: {
-        _id: session.id,
-        nickname: session.nickname,
-        isAdmin: session.role === 'admin',
-      },
-    }));
+  async getLast50ChatEvents(rooms: ChatRoom[]): Promise<ChatMessageEvent[]> {
+    const roomsMsgs = await Promise.all(
+      rooms.map((room) =>
+        this.prisma.chatMessage.findMany({
+          take: 50,
+          where: {
+            room,
+          },
+          orderBy: {
+            timestamp: 'desc',
+          },
+          include: {
+            session: true,
+          },
+        }),
+      ),
+    );
+    return roomsMsgs
+      .map((msgs) =>
+        msgs.reverse().map(({ session, ...msg }) => ({
+          id: msg.id,
+          text: msg.text,
+          sessionId: session.id,
+          room: msg.room,
+          session: {
+            _id: session.id,
+            nickname: session.nickname,
+            isAdmin: session.role === 'admin',
+          },
+        })),
+      )
+      .flat();
   }
 }
