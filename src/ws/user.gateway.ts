@@ -19,7 +19,7 @@ import { WsAppException, errors } from 'src/lib/errors';
 @WebSocketGateway({
   path: '/user',
   cors: { origin: '*' },
-  transports: ['polling'],
+  transports: ['websocket', 'polling'],
 })
 @UseFilters(WsExceptionsFilter)
 export default class UserGateway extends AbstractGateway {

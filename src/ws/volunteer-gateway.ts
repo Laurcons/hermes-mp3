@@ -11,7 +11,7 @@ import { ChatRoom, Session } from '@prisma/client';
 @WebSocketGateway({
   path: '/volunteer',
   cors: { origin: '*' },
-  transports: ['polling'],
+  transports: ['websocket', 'polling'],
 })
 export default class VolunteerGateway extends AbstractGateway {
   constructor(

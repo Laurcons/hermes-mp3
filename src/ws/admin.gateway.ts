@@ -13,7 +13,7 @@ import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 @WebSocketGateway({
   path: '/admin',
   cors: { origin: '*' },
-  transports: ['polling'],
+  transports: ['websocket', 'polling'],
 })
 export default class AdminGateway extends AbstractGateway {
   constructor(
