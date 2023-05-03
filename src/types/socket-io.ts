@@ -4,6 +4,7 @@ import { Subscription } from 'rxjs';
 import { ChatMessageEvent } from 'src/types/events/chat.events';
 import { LocationEventEvent } from 'src/types/events/location.events';
 import StatusEvent from './events/status.events';
+import { Prisma, Session, User } from '@prisma/client';
 
 export type SocketData = {
   sessionId: string;
@@ -22,6 +23,12 @@ export interface ServerToAdminEvents {
   status: (status: StatusEvent) => void;
 }
 
+export interface ServerToVolunteerEvents {
+  'chat-message': (msg: ChatMessageEvent) => void;
+  user: (user: Partial<Session & { user?: Partial<User> }>) => void;
+  status: (status: StatusEvent) => void;
+}
+
 export type UserSocket = Socket<
   DefaultEventsMap,
   ServerToUserEvents,
@@ -32,6 +39,13 @@ export type UserSocket = Socket<
 export type AdminSocket = Socket<
   DefaultEventsMap,
   ServerToAdminEvents,
+  DefaultEventsMap,
+  SocketData
+>;
+
+export type VolunteerSocket = Socket<
+  DefaultEventsMap,
+  ServerToVolunteerEvents,
   DefaultEventsMap,
   SocketData
 >;

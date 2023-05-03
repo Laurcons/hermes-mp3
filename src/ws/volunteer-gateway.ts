@@ -3,17 +3,17 @@ import ChatService from 'src/service/chat.service';
 import LocationService from 'src/service/location.service';
 import { SessionService } from 'src/service/session.service';
 import { Location } from 'src/types/location';
-import { UserSocket } from 'src/types/socket-io';
+import { UserSocket, VolunteerSocket } from 'src/types/socket-io';
 import AbstractGateway from './abstract-gateway';
 import { Subscription } from 'rxjs';
-import { Session } from '@prisma/client';
+import { ChatRoom, Session } from '@prisma/client';
 
 @WebSocketGateway({
-  path: '/user',
+  path: '/volunteer',
   cors: { origin: '*' },
   transports: ['websocket', 'polling'],
 })
-export default class UserGateway extends AbstractGateway {
+export default class VolunteerGateway extends AbstractGateway {
   constructor(
     private sessionService: SessionService,
     private chatService: ChatService,
@@ -29,12 +29,27 @@ export default class UserGateway extends AbstractGateway {
   }
 
   configureSubscriptions(client: UserSocket): Subscription[] {
-    return [];
+    return [
+      this.chatService.onMessage$.subscribe((msg) => {
+        client.emit('chat-message', msg);
+      }),
+    ];
   }
 
-  async handleConnection(client: UserSocket) {
+  async handleConnection(client: VolunteerSocket) {
     super.handleConnection(client);
-    const sess = await this.sessionService.findById(client.data.sessionId);
-    client.emit('location-tracking', sess.isTrackingLocation);
+    this.chatService
+      .getLast50ChatEvents(['participants', 'volunteers'])
+      .then((evts) => evts.forEach((evt) => client.emit('chat-message', evt)));
+    this.sessionService
+      .findById(client.data.sessionId)
+      .then((sess) => client.emit('user', sess));
+  }
+
+  @SubscribeMessage('send-chat-message')
+  async sendMessage(socket: VolunteerSocket, [room, text]: [ChatRoom, string]) {
+    const session = await this.sessionService.findById(socket.data.sessionId);
+    this.chatService.sendMessage(session, room, text);
+    return 'ok';
   }
 }

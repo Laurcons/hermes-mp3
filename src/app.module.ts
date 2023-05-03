@@ -9,6 +9,7 @@ import { HttpModule } from '@nestjs/axios';
 import RecaptchaService from './service/recaptcha.service';
 import PrismaService from './service/prisma.service';
 import StatusService from './service/status.service';
+import VolunteerGateway from './ws/volunteer-gateway';
 
 @Module({
   imports: [HttpModule.register({})],
@@ -17,6 +18,7 @@ import StatusService from './service/status.service';
     PrismaService,
     UserGateway,
     AdminGateway,
+    VolunteerGateway,
     SessionService,
     ChatService,
     LocationService,

@@ -6,6 +6,7 @@ import PrismaService from './prisma.service';
 import { Session } from '@prisma/client';
 import { errors } from 'src/lib/errors';
 import { NicknameChangedEvent } from 'src/types/events/session.events';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class SessionService {
@@ -33,27 +34,28 @@ export class SessionService {
     return sess;
   }
 
-  async createAdminSession(username: string, password: string) {
-    if (!(username === 'laur' && password === 'laur'))
-      throw errors.auth.invalidCredentials;
+  async createAdminOrVolunteerSession(username: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { username } });
+    if (!user) throw errors.auth.invalidCredentials;
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) throw errors.auth.invalidCredentials;
     const token = randomBytes(256).toString('hex');
     const sess = await this.prisma.session.create({
       data: {
         token,
-        role: 'admin',
+        role: user.role,
+        userId: user.id,
+        nickname: user.username,
       },
     });
     return sess;
   }
 
-  async createVolunteerSession(username: string, password: string) {
-    if (!(username === 'volunt' && password === 'volunt'))
-      throw errors.auth.invalidCredentials;
-    const token = randomBytes(256).toString('hex');
-  }
-
   async findById(id: string) {
-    return await this.prisma.session.findUnique({ where: { id } });
+    return await this.prisma.session.findUnique({
+      where: { id },
+      include: { user: true },
+    });
   }
 
   async removeSession(id: string) {

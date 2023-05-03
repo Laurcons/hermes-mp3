@@ -8,7 +8,7 @@ export default class SessionsController {
   @Post()
   create(@Body() body: any) {
     if (body.username) {
-      return this.sessionService.createAdminSession(
+      return this.sessionService.createAdminOrVolunteerSession(
         body.username,
         body.password,
       );
