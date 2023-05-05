@@ -32,7 +32,8 @@ export default class ChatService {
       session: {
         _id: session.id,
         nickname: session.nickname,
-        isAdmin: session.role === 'admin',
+        role: session.role,
+        color: session.color,
       },
     });
   }
@@ -64,7 +65,8 @@ export default class ChatService {
           session: {
             _id: session.id,
             nickname: session.nickname,
-            isAdmin: session.role === 'admin',
+            role: session.role,
+            color: session.color,
           },
         })),
       )

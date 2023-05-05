@@ -43,6 +43,7 @@ model Session {
   isTrackingLocation Boolean @default(false)
   nickname String?
   role SessionRole
+  color String @default("#000")
 
   user User? @relation(fields: [userId], references: [id])
   chatMessages ChatMessage[]

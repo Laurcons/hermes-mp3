@@ -1,4 +1,4 @@
-import { ChatRoom } from '@prisma/client';
+import { ChatRoom, SessionRole } from '@prisma/client';
 
 export interface ChatMessageEvent {
   id: string;
@@ -6,7 +6,8 @@ export interface ChatMessageEvent {
   session: {
     _id: string;
     nickname: string;
-    isAdmin: boolean;
+    role: SessionRole;
+    color: string;
   };
   room: ChatRoom;
   text: string;

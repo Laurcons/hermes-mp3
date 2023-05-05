@@ -29,6 +29,9 @@ export class SessionService {
       data: {
         token,
         role: 'participant',
+        // generate random color
+        color:
+          '#' + Math.round(Math.random() * 0xefffff + 0x100000).toString(16),
       },
     });
     return sess;
