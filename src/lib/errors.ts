@@ -27,6 +27,10 @@ export const errors = {
       'InvalidNickname',
       'Pseudonimul tău trebuie să aibă 3-17 caractere.',
     ),
+    invalidChatMessage: new WsAppException(
+      'InvalidChatMessage',
+      'Mesajul tău nu poate fi trimis',
+    ),
     refusingLocationTrack: new WsAppException(
       'RefusingLocationTrack',
       'Se refuză recepționarea locației deoarece locația live este oprită',

@@ -14,8 +14,9 @@ export default class ChatService {
   constructor(private prisma: PrismaService) {}
 
   async sendMessage(session: Session, room: ChatRoom, text: string) {
-    if (!session.nickname && session.role === 'participant')
+    if (!session.nickname && session.role !== 'admin')
       throw errors.ws.nicknameNotSet;
+    if (text.trim().length === 0) throw errors.ws.invalidChatMessage;
     const msg = await this.prisma.chatMessage.create({
       data: {
         sessionId: session.id,
