@@ -17,7 +17,6 @@ export default class VolunteerGateway extends AbstractGateway {
   constructor(
     private sessionService: SessionService,
     private chatService: ChatService,
-    private locationService: LocationService,
   ) {
     super();
   }

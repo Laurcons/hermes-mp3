@@ -15,6 +15,7 @@ export interface ServerToUserEvents {
   'location-tracking': (isTrackingLocation: boolean) => void;
   'chat-message': (msg: ChatMessageEvent) => void;
   nickname: (nick: string) => void;
+  session: (session: Partial<Session & { user?: Partial<User> }>) => void;
 }
 
 export interface ServerToAdminEvents {

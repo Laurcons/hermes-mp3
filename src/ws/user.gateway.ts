@@ -56,6 +56,7 @@ export default class UserGateway extends AbstractGateway {
   async handleConnection(client: UserSocket) {
     super.handleConnection(client);
     const sess = await this.sessionService.findById(client.data.sessionId);
+    client.emit('session', sess);
     client.emit('location-tracking', sess.isTrackingLocation);
     const chats = await this.chatService.getLast50ChatEvents(['participants']);
     for (const chat of chats) {
