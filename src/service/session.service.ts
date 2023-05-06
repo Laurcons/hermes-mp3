@@ -17,14 +17,22 @@ export class SessionService {
   locationTrackingChange$ = this.locationTrackingChangeSub.asObservable();
   private nicknameChangedSub = new Subject<NicknameChangedEvent>();
   nicknameChanged$ = this.nicknameChangedSub.asObservable();
+  private revokeSessionSub = new Subject<Pick<Session, 'id'>>();
+  revokeSession$ = this.revokeSessionSub.asObservable();
 
   constructor(
     private prisma: PrismaService,
     private recaptchaService: RecaptchaService,
   ) {}
 
-  async createUserSession(data: { recaptchaToken: string }) {
-    await this.recaptchaService.verifyToken(data.recaptchaToken);
+  async createUserSession({
+    recaptchaToken,
+    ip,
+  }: {
+    recaptchaToken: string;
+    ip: string;
+  }) {
+    await this.recaptchaService.verifyToken(recaptchaToken);
     const token = randomBytes(256).toString('hex');
     const sess = await this.prisma.session.create({
       data: {
@@ -33,12 +41,21 @@ export class SessionService {
         // generate random color
         color:
           '#' + Math.round(Math.random() * 0xefffff + 0x100000).toString(16),
+        ip,
       },
     });
     return sess;
   }
 
-  async createAdminOrVolunteerSession(username: string, password: string) {
+  async createAdminOrVolunteerSession({
+    username,
+    password,
+    ip,
+  }: {
+    username: string;
+    password: string;
+    ip: string;
+  }) {
     const user = await this.prisma.user.findUnique({ where: { username } });
     if (!user) throw errors.auth.invalidCredentials;
     const valid = await bcrypt.compare(password, user.password);
@@ -50,6 +67,7 @@ export class SessionService {
         role: user.role,
         userId: user.id,
         nickname: user.username,
+        ip,
       },
     });
     return sess;
@@ -144,5 +162,16 @@ export class SessionService {
       activeParticipants,
       activeTrackings,
     };
+  }
+
+  async revokeSession(id: string) {
+    const sess = await this.prisma.session.update({
+      where: { id },
+      data: {
+        isRevoked: true,
+      },
+    });
+    this.revokeSessionSub.next({ id });
+    return sess;
   }
 }

@@ -30,13 +30,19 @@ export default class LocationService {
     this.locationFeedSub.next({
       ...loc,
       sessionId: session.id.toString(),
+      session: {
+        id: session.id,
+        color: session.color,
+        role: session.role,
+      },
     });
     return loc;
   }
 
-  async getLast50LocationEvents() {
+  async getAllCurrentLocations(): Promise<LocationEventEvent[]> {
     return await this.prisma.locationEvent.findMany({
-      take: 50,
+      distinct: ['sessionId'],
+      include: { session: { select: { id: true, color: true, role: true } } },
     });
   }
 }

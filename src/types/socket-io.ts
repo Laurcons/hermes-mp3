@@ -25,6 +25,7 @@ export interface ServerToAdminEvents {
 }
 
 export interface ServerToVolunteerEvents {
+  'location-tracking': (isTrackingLocation: boolean) => void;
   'chat-message': (msg: ChatMessageEvent) => void;
   user: (user: Partial<Session & { user?: Partial<User> }>) => void;
   status: (status: StatusEvent) => void;

@@ -10,6 +10,7 @@ import RecaptchaService from './service/recaptcha.service';
 import PrismaService from './service/prisma.service';
 import StatusService from './service/status.service';
 import VolunteerGateway from './ws/volunteer-gateway';
+import { ModerationService } from './service/moderation.service';
 
 @Module({
   imports: [HttpModule.register({})],
@@ -24,6 +25,7 @@ import VolunteerGateway from './ws/volunteer-gateway';
     LocationService,
     RecaptchaService,
     StatusService,
+    ModerationService,
   ],
 })
 export class AppModule {}

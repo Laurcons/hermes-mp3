@@ -3,13 +3,15 @@ import { WsException } from '@nestjs/websockets';
 import { Subject } from 'rxjs';
 import { ChatMessageEvent } from '../types/events/chat.events';
 import PrismaService from './prisma.service';
-import { ChatRoom, Session } from '@prisma/client';
+import { ChatMessage, ChatRoom, Session } from '@prisma/client';
 import { errors } from 'src/lib/errors';
 
 @Injectable()
 export default class ChatService {
   private onMessageSub = new Subject<ChatMessageEvent>();
   onMessage$ = this.onMessageSub.asObservable();
+  private deleteMessageSub = new Subject<Pick<ChatMessage, 'id'>>();
+  deleteMessage$ = this.deleteMessageSub.asObservable();
 
   constructor(private prisma: PrismaService) {}
 
@@ -75,5 +77,13 @@ export default class ChatService {
         })),
       )
       .flat();
+  }
+
+  async deleteMessage(id: string) {
+    await this.prisma.chatMessage.update({
+      where: { id },
+      data: { isDeleted: true },
+    });
+    this.deleteMessageSub.next({ id });
   }
 }

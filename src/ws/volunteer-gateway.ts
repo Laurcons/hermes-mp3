@@ -17,6 +17,7 @@ export default class VolunteerGateway extends AbstractGateway {
   constructor(
     private sessionService: SessionService,
     private chatService: ChatService,
+    private locationService: LocationService,
   ) {
     super();
   }
@@ -32,6 +33,10 @@ export default class VolunteerGateway extends AbstractGateway {
       this.chatService.onMessage$.subscribe((msg) => {
         client.emit('chat-message', msg);
       }),
+      this.sessionService.locationTrackingChange$.subscribe((msg) => {
+        if (client.data.sessionId === msg.id)
+          client.emit('location-tracking', msg.isTrackingLocation);
+      }),
     ];
   }
 
@@ -40,15 +45,28 @@ export default class VolunteerGateway extends AbstractGateway {
     this.chatService
       .getLast50ChatEvents(['participants', 'volunteers'])
       .then((evts) => evts.forEach((evt) => client.emit('chat-message', evt)));
-    this.sessionService
-      .findById(client.data.sessionId)
-      .then((sess) => client.emit('user', sess));
+    const sess = await this.sessionService.findById(client.data.sessionId);
+    client.emit('user', sess);
+    client.emit('location-tracking', sess.isTrackingLocation);
   }
 
   @SubscribeMessage('send-chat-message')
   async sendMessage(socket: VolunteerSocket, [room, text]: [ChatRoom, string]) {
     const session = await this.sessionService.findById(socket.data.sessionId);
     this.chatService.sendMessage(session, room, text);
+    return 'ok';
+  }
+
+  @SubscribeMessage('location')
+  async trackLocation(socket: UserSocket, pos: Location) {
+    const session = await this.sessionService.findById(socket.data.sessionId);
+    await this.locationService.trackLocation(session, pos);
+    return 'ok';
+  }
+
+  @SubscribeMessage('set-location-tracking')
+  async setLocationTracking(socket: UserSocket, isTracking: boolean) {
+    await this.sessionService.setIsTracking(socket.data.sessionId, isTracking);
     return 'ok';
   }
 }

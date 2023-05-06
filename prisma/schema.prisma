@@ -37,7 +37,9 @@ model User {
 
 model Session {
   id String @id @default(auto()) @map("_id") @db.ObjectId
+  isRevoked Boolean @default(false)
   wsId String?
+  ip String @default("")
   userId String? @db.ObjectId
   token String @unique
   isTrackingLocation Boolean @default(false)
@@ -56,6 +58,7 @@ model ChatMessage {
   sessionId String @db.ObjectId
   room ChatRoom
   text String
+  isDeleted Boolean @default(false)
 
   session Session? @relation(fields: [sessionId], references: [id])
 }
@@ -69,4 +72,15 @@ model LocationEvent {
   acc Float
 
   session Session @relation(fields: [sessionId], references: [id])
+}
+
+enum BanType {
+  ip
+  session
+}
+
+model Ban {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  type BanType
+  value String
 }
