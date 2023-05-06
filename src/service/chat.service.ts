@@ -16,7 +16,10 @@ export default class ChatService {
   async sendMessage(session: Session, room: ChatRoom, text: string) {
     if (!session.nickname && session.role !== 'admin')
       throw errors.ws.nicknameNotSet;
-    if (text.trim().length === 0) throw errors.ws.invalidChatMessage;
+    text = text.trim();
+    if (text.length === 0) throw errors.ws.invalidChatMessage;
+    if (session.role === 'participant' && text.length > 1024)
+      throw errors.ws.invalidChatMessage;
     const msg = await this.prisma.chatMessage.create({
       data: {
         sessionId: session.id,
