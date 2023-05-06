@@ -7,6 +7,7 @@ import { Session } from '@prisma/client';
 import { errors } from 'src/lib/errors';
 import { NicknameChangedEvent } from 'src/types/events/session.events';
 import * as bcrypt from 'bcrypt';
+import { matches } from 'class-validator';
 
 @Injectable()
 export class SessionService {
@@ -94,6 +95,9 @@ export class SessionService {
   }
 
   async updateNickname(id: string, nickname: string): Promise<Session> {
+    if (!matches(nickname, /[\S]{3,17}/)) {
+      throw errors.ws.invalidNickname;
+    }
     const sess = await this.prisma.session.update({
       where: {
         id,

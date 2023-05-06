@@ -23,6 +23,10 @@ export const errors = {
       'NicknameNotSet',
       'Nu ai setat un pseudonim!',
     ),
+    invalidNickname: new WsAppException(
+      'InvalidNickname',
+      'Pseudonimul tău trebuie să aibă 3-17 caractere.',
+    ),
     refusingLocationTrack: new WsAppException(
       'RefusingLocationTrack',
       'Se refuză recepționarea locației deoarece locația live este oprită',
